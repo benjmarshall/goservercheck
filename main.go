@@ -27,6 +27,7 @@ func main() {
 	if err != nil {
 		notifyAndExit("Can't find ~/.goservecheck")
 	}
+	defer f.Close()
 
 	var serverList []string
 	fileScanner := bufio.NewScanner(f)
