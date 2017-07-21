@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/user"
+	"runtime"
 	"strings"
 
 	"github.com/0xAX/notificator"
@@ -30,7 +31,7 @@ func main() {
 	fmt.Println(serverList.sl)
 
 	// Run the server checks
-	ok, errorsList := runChecks(*serverList, 5)
+	ok, errorsList := runChecks(*serverList, runtime.NumCPU())
 
 	// If any of the checks failed to connect to the server issue an error. (note this does not include http errors)
 	if !ok {
@@ -71,6 +72,8 @@ func reader(serverListFile string) []string {
 
 // runChecks runs the server checks for each server in the list
 func runChecks(serverList serverListType, numWorkers int) (bool, string) {
+
+	fmt.Printf("Using %d workers.\n", numWorkers)
 
 	var errorsList string
 
