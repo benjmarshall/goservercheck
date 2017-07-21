@@ -12,6 +12,7 @@ func genMockReader(servers []string) serverListReader {
 }
 
 func TestRunChecks(t *testing.T) {
+	t.Log("Starting Test")
 
 	mockReaderPass := genMockReader([]string{"google.com", "https://golang.org"})
 	mockReaderFail := genMockReader([]string{"notfound.google.com", "https://golang.org"})
@@ -30,9 +31,10 @@ func TestRunChecks(t *testing.T) {
 
 		serverList.read()
 
-		t.Logf("\nTest Number:%v\n", testnum)
-		t.Logf("\nChecking Servers:\n%v\n", serverList.sl)
-		ok, got := runChecks(*serverList)
+		t.Logf("Test Number:%v\n", testnum)
+		t.Logf("Checking Servers:\n%v\n", serverList.sl)
+		ok, got := runChecks(*serverList, 5)
+		t.Logf("\nOk: %v\nGot:\n%v\n", ok, got)
 
 		if test.expectedResult {
 			if !ok {
@@ -55,7 +57,7 @@ func BenchmarkRunChecks(b *testing.B) {
 	serverList.read()
 
 	for n := 0; n < b.N; n++ {
-		ok, got := runChecks(*serverList)
+		ok, got := runChecks(*serverList, 5)
 		if !ok {
 			b.Errorf("Sever check error during benchmarking:\n%v", got)
 		}

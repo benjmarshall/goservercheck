@@ -19,3 +19,9 @@ func newServerList(reader serverListReader, serverListFile string) *serverListTy
 func (serverList *serverListType) read() {
 	serverList.sl = serverList.reader(serverList.serverListFile)
 }
+
+type serverResponse struct {
+	url        string
+	returnCode int
+	status     string
+}
