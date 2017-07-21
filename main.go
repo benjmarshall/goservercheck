@@ -30,7 +30,7 @@ func main() {
 	fmt.Println(serverList.sl)
 
 	// Run the server checks
-	ok, errorsList := runChecks(*serverList)
+	ok, errorsList := runChecks(*serverList, 5)
 
 	// If any of the checks failed to connect to the server issue an error. (note this does not include http errors)
 	if !ok {
@@ -70,43 +70,64 @@ func reader(serverListFile string) []string {
 }
 
 // runChecks runs the server checks for each server in the list
-func runChecks(serverList serverListType) (bool, string) {
+func runChecks(serverList serverListType, numWorkers int) (bool, string) {
 
 	var errorsList string
 
+	chURL := make(chan string, len(serverList.sl))
+	chResp := make(chan serverResponse, len(serverList.sl))
+
+	for i := 0; i < numWorkers; i++ {
+		go checkServer(chURL, chResp)
+	}
+
 	for _, url := range serverList.sl {
-		status, statusString := checkServer(url)
-		if status == -1 {
-			errorsList = errorsList + fmt.Sprintf("Error occured connecting to %s:\n%v", url, statusString)
+		chURL <- url
+	}
+
+	close(chURL)
+
+	for i := 0; i < len(serverList.sl); i++ {
+		response := <-chResp
+		if response.returnCode == -1 {
+			errorsList = errorsList + fmt.Sprintf("Error occured connecting to %s:\n%v", response.url, response.status)
 			return false, errorsList
-		} else if status == 1 {
-			errorsList = errorsList + fmt.Sprintf("%s, appears to be down. Resonse was:%s\n", url, statusString)
+		} else if response.returnCode == 1 {
+			errorsList = errorsList + fmt.Sprintf("%s, appears to be down. Resonse was:%s\n", response.url, response.status)
 		}
 	}
+
+	close(chResp)
+
 	return true, errorsList
 
 }
 
 // checkServer performs the actual server check
-func checkServer(url string) (int, string) {
+func checkServer(chURL chan string, chResp chan serverResponse) {
 
-	// Check URL format
-	if !strings.HasPrefix(url, "http") {
-		url = "http://" + url
+	for url := range chURL {
+
+		// Check URL format
+		fullURL := url
+		if !strings.HasPrefix(url, "http") {
+			fullURL = "http://" + fullURL
+		}
+
+		resp, err := http.Get(fullURL)
+		if resp == nil || err != nil {
+			chResp <- serverResponse{url, -1, err.Error()}
+		} else {
+			defer resp.Body.Close()
+			status := resp.Status
+			if resp.StatusCode != 200 {
+				chResp <- serverResponse{url, 1, status}
+			} else {
+				chResp <- serverResponse{url, 0, status}
+			}
+		}
+
 	}
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return -1, err.Error()
-	}
-	defer resp.Body.Close()
-	status := resp.Status
-
-	if resp.StatusCode != 200 {
-		return 1, status
-	}
-
-	return 0, status
 }
 
 func notifyAndExit(s string) {
