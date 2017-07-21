@@ -28,7 +28,6 @@ func main() {
 
 	// Read the server list
 	serverList.read()
-	fmt.Println(serverList.sl)
 
 	// Run the server checks
 	ok, errorsList := runChecks(*serverList, runtime.NumCPU())
@@ -72,8 +71,6 @@ func reader(serverListFile string) []string {
 
 // runChecks runs the server checks for each server in the list
 func runChecks(serverList serverListType, numWorkers int) (bool, string) {
-
-	fmt.Printf("Using %d workers.\n", numWorkers)
 
 	var errorsList string
 
