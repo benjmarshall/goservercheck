@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"runtime"
+	"testing"
+)
 
 // genMockReader generates a mock reader function used to remove the need for a server
 // list file to be present in the users home directory
@@ -33,7 +36,7 @@ func TestRunChecks(t *testing.T) {
 
 		t.Logf("Test Number:%v\n", testnum)
 		t.Logf("Checking Servers:\n%v\n", serverList.sl)
-		ok, got := runChecks(*serverList, 5)
+		ok, got := runChecks(*serverList, runtime.NumCPU())
 		t.Logf("\nOk: %v\nGot:\n%v\n", ok, got)
 
 		if test.expectedResult {
@@ -57,7 +60,7 @@ func BenchmarkRunChecks(b *testing.B) {
 	serverList.read()
 
 	for n := 0; n < b.N; n++ {
-		ok, got := runChecks(*serverList, 5)
+		ok, got := runChecks(*serverList, 4)
 		if !ok {
 			b.Errorf("Sever check error during benchmarking:\n%v", got)
 		}
